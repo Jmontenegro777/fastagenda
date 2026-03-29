@@ -5,22 +5,84 @@ import * as api from "./api.js";
 //  PALETA DE COLORES
 // ──────────────────────────────────────────────
 const COLOR_PALETTE = [
-  { id: "red",    label: "Rojo",     hex: "#ef4444", color: "bg-red-500",    light: "bg-red-100 text-red-800",       dot: "bg-red-500"    },
-  { id: "orange", label: "Naranja",  hex: "#f97316", color: "bg-orange-500", light: "bg-orange-100 text-orange-800", dot: "bg-orange-500" },
-  { id: "yellow", label: "Amarillo", hex: "#facc15", color: "bg-yellow-400", light: "bg-yellow-100 text-yellow-800", dot: "bg-yellow-400" },
-  { id: "green",  label: "Verde",    hex: "#16a34a", color: "bg-green-600",  light: "bg-green-100 text-green-800",   dot: "bg-green-600"  },
-  { id: "teal",   label: "Teal",     hex: "#0d9488", color: "bg-teal-500",   light: "bg-teal-100 text-teal-800",     dot: "bg-teal-500"   },
-  { id: "blue",   label: "Azul",     hex: "#3b82f6", color: "bg-blue-500",   light: "bg-blue-100 text-blue-800",     dot: "bg-blue-500"   },
-  { id: "indigo", label: "Índigo",   hex: "#6366f1", color: "bg-indigo-500", light: "bg-indigo-100 text-indigo-800", dot: "bg-indigo-500" },
-  { id: "purple", label: "Morado",   hex: "#a855f7", color: "bg-purple-500", light: "bg-purple-100 text-purple-800", dot: "bg-purple-500" },
-  { id: "pink",   label: "Rosado",   hex: "#ec4899", color: "bg-pink-400",   light: "bg-pink-100 text-pink-800",     dot: "bg-pink-400"   },
-  { id: "rose",   label: "Rosa",     hex: "#f43f5e", color: "bg-rose-500",   light: "bg-rose-100 text-rose-800",     dot: "bg-rose-500"   },
-  { id: "cyan",   label: "Cian",     hex: "#06b6d4", color: "bg-cyan-500",   light: "bg-cyan-100 text-cyan-800",     dot: "bg-cyan-500"   },
-  { id: "lime",   label: "Lima",     hex: "#84cc16", color: "bg-lime-500",   light: "bg-lime-100 text-lime-800",     dot: "bg-lime-500"   },
+  // Rojos
+  { id: "red-300",   label: "Rojo claro",    hex: "#fca5a5", color: "bg-red-300",    light: "bg-red-50 text-red-700",      dot: "bg-red-300"    },
+  { id: "red",       label: "Rojo",          hex: "#ef4444", color: "bg-red-500",    light: "bg-red-100 text-red-800",     dot: "bg-red-500"    },
+  { id: "red-700",   label: "Rojo oscuro",   hex: "#b91c1c", color: "bg-red-700",    light: "bg-red-100 text-red-900",     dot: "bg-red-700"    },
+  // Rosas / Rosas
+  { id: "pink",      label: "Rosado",        hex: "#ec4899", color: "bg-pink-400",   light: "bg-pink-100 text-pink-800",   dot: "bg-pink-400"   },
+  { id: "rose",      label: "Rosa",          hex: "#f43f5e", color: "bg-rose-500",   light: "bg-rose-100 text-rose-800",   dot: "bg-rose-500"   },
+  { id: "fuchsia",   label: "Fucsia",        hex: "#d946ef", color: "bg-fuchsia-500",light: "bg-fuchsia-100 text-fuchsia-800", dot: "bg-fuchsia-500" },
+  // Morados
+  { id: "purple-300",label: "Lila",          hex: "#d8b4fe", color: "bg-purple-300", light: "bg-purple-50 text-purple-700",dot: "bg-purple-300" },
+  { id: "purple",    label: "Morado",        hex: "#a855f7", color: "bg-purple-500", light: "bg-purple-100 text-purple-800",dot: "bg-purple-500" },
+  { id: "purple-700",label: "Morado oscuro", hex: "#7e22ce", color: "bg-purple-700", light: "bg-purple-100 text-purple-900",dot: "bg-purple-700" },
+  // Índigo / Azul
+  { id: "indigo",    label: "Índigo",        hex: "#6366f1", color: "bg-indigo-500", light: "bg-indigo-100 text-indigo-800",dot: "bg-indigo-500" },
+  { id: "blue-300",  label: "Azul claro",    hex: "#93c5fd", color: "bg-blue-300",   light: "bg-blue-50 text-blue-700",    dot: "bg-blue-300"   },
+  { id: "blue",      label: "Azul",          hex: "#3b82f6", color: "bg-blue-500",   light: "bg-blue-100 text-blue-800",   dot: "bg-blue-500"   },
+  { id: "blue-700",  label: "Azul oscuro",   hex: "#1d4ed8", color: "bg-blue-700",   light: "bg-blue-100 text-blue-900",   dot: "bg-blue-700"   },
+  { id: "sky",       label: "Celeste",       hex: "#0ea5e9", color: "bg-sky-500",    light: "bg-sky-100 text-sky-800",     dot: "bg-sky-500"    },
+  // Cianes / Verdes agua
+  { id: "cyan",      label: "Cian",          hex: "#06b6d4", color: "bg-cyan-500",   light: "bg-cyan-100 text-cyan-800",   dot: "bg-cyan-500"   },
+  { id: "teal",      label: "Teal",          hex: "#0d9488", color: "bg-teal-500",   light: "bg-teal-100 text-teal-800",   dot: "bg-teal-500"   },
+  { id: "teal-700",  label: "Teal oscuro",   hex: "#0f766e", color: "bg-teal-700",   light: "bg-teal-100 text-teal-900",   dot: "bg-teal-700"   },
+  // Verdes
+  { id: "green-300", label: "Verde claro",   hex: "#86efac", color: "bg-green-300",  light: "bg-green-50 text-green-700",  dot: "bg-green-300"  },
+  { id: "green",     label: "Verde",         hex: "#22c55e", color: "bg-green-500",  light: "bg-green-100 text-green-800", dot: "bg-green-500"  },
+  { id: "green-700", label: "Verde oscuro",  hex: "#15803d", color: "bg-green-700",  light: "bg-green-100 text-green-900", dot: "bg-green-700"  },
+  { id: "emerald",   label: "Esmeralda",     hex: "#10b981", color: "bg-emerald-500",light: "bg-emerald-100 text-emerald-800",dot: "bg-emerald-500"},
+  // Limas / Amarillos
+  { id: "lime",      label: "Lima",          hex: "#84cc16", color: "bg-lime-500",   light: "bg-lime-100 text-lime-800",   dot: "bg-lime-500"   },
+  { id: "yellow",    label: "Amarillo",      hex: "#eab308", color: "bg-yellow-500", light: "bg-yellow-100 text-yellow-800",dot: "bg-yellow-500" },
+  { id: "yellow-300",label: "Amarillo claro",hex: "#fde047", color: "bg-yellow-300", light: "bg-yellow-50 text-yellow-700",dot: "bg-yellow-300" },
+  // Naranjas / Ambarinos
+  { id: "amber",     label: "Ámbar",         hex: "#f59e0b", color: "bg-amber-500",  light: "bg-amber-100 text-amber-800", dot: "bg-amber-500"  },
+  { id: "orange",    label: "Naranja",       hex: "#f97316", color: "bg-orange-500", light: "bg-orange-100 text-orange-800",dot: "bg-orange-500" },
+  { id: "orange-700",label: "Naranja oscuro",hex: "#c2410c", color: "bg-orange-700", light: "bg-orange-100 text-orange-900",dot: "bg-orange-700" },
+  // Neutros
+  { id: "slate",     label: "Pizarra",       hex: "#64748b", color: "bg-slate-500",  light: "bg-slate-100 text-slate-800", dot: "bg-slate-500"  },
+  { id: "gray",      label: "Gris",          hex: "#6b7280", color: "bg-gray-500",   light: "bg-gray-100 text-gray-800",   dot: "bg-gray-500"   },
+  { id: "zinc-700",  label: "Zinc",          hex: "#3f3f46", color: "bg-zinc-700",   light: "bg-zinc-100 text-zinc-800",   dot: "bg-zinc-700"   },
+];
+
+const COLOR_GROUPS = [
+  { label: "Rojos",            ids: ["red-300","red","red-700"] },
+  { label: "Rosas",            ids: ["pink","rose","fuchsia"] },
+  { label: "Morados",          ids: ["purple-300","purple","purple-700"] },
+  { label: "Azules",           ids: ["indigo","blue-300","blue","blue-700","sky"] },
+  { label: "Verdes agua",      ids: ["cyan","teal","teal-700"] },
+  { label: "Verdes",           ids: ["green-300","green","green-700","emerald"] },
+  { label: "Amarillos/Limas",  ids: ["lime","yellow-300","yellow"] },
+  { label: "Naranjas",         ids: ["amber","orange","orange-700"] },
+  { label: "Neutros",          ids: ["slate","gray","zinc-700"] },
 ];
 
 // Emojis sugeridos para categorías
 const EMOJI_PALETTE = ["🏥","🩺","💊","🧬","🔬","🏃","🎂","🍽️","📅","📋","🎓","⚽","🏋️","🎯","✈️","🌙","☀️","⭐","🔔","🛡️","❤️","🧠","👶","🩻","🏨","📝","🤝","💪"];
+
+// Selector de color agrupado
+function ColorPicker({ colorId, onChange }) {
+  return (
+    <div className="space-y-2">
+      {COLOR_GROUPS.map(group => {
+        const groupColors = group.ids.map(id => COLOR_PALETTE.find(c => c.id === id)).filter(Boolean);
+        return (
+          <div key={group.label} className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 w-24 flex-shrink-0">{group.label}</span>
+            <div className="flex gap-1.5 flex-wrap">
+              {groupColors.map(c => (
+                <button key={c.id} title={c.label} onClick={() => onChange(c.id)}
+                  className={`w-6 h-6 rounded-full border-2 transition hover:scale-110 ${colorId === c.id ? "border-gray-800 scale-125" : "border-transparent hover:border-gray-400"}`}
+                  style={{ backgroundColor: c.hex }} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ──────────────────────────────────────────────
 //  CATEGORÍAS INICIALES
@@ -299,15 +361,8 @@ function CategoryManagerModal({ categories, tasks, onSave, onClose }) {
                           </div>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-400 mb-1.5">Color</p>
-                          <div className="flex gap-2 flex-wrap">
-                            {COLOR_PALETTE.map(c => (
-                              <button key={c.id} title={c.label}
-                                onClick={() => setEditForm(f => ({ ...f, colorId: c.id }))}
-                                className={`w-7 h-7 rounded-full border-2 transition hover:scale-110 ${editForm.colorId === c.id ? "border-gray-800 scale-110" : "border-transparent"}`}
-                                style={{ backgroundColor: c.hex }} />
-                            ))}
-                          </div>
+                          <p className="text-xs text-gray-400 mb-2">Color</p>
+                          <ColorPicker colorId={editForm.colorId} onChange={id => setEditForm(f => ({ ...f, colorId: id }))} />
                           <div className="mt-2">
                             <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${editColor.light}`}>
                               {editForm.label || "Vista previa"}
@@ -404,15 +459,8 @@ function CategoryManagerModal({ categories, tasks, onSave, onClose }) {
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 mb-1.5">Color</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {COLOR_PALETTE.map(c => (
-                        <button key={c.id} title={c.label}
-                          onClick={() => setNewForm(f => ({ ...f, colorId: c.id }))}
-                          className={`w-7 h-7 rounded-full border-2 transition hover:scale-110 ${newForm.colorId === c.id ? "border-gray-800 scale-110" : "border-transparent"}`}
-                          style={{ backgroundColor: c.hex }} />
-                      ))}
-                    </div>
+                    <p className="text-xs text-gray-400 mb-2">Color</p>
+                    <ColorPicker colorId={newForm.colorId} onChange={id => setNewForm(f => ({ ...f, colorId: id }))} />
                     <div className="mt-2">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${newColor.light}`}>
                         {newForm.label || "Vista previa"}
