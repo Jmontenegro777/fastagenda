@@ -1,11 +1,6 @@
-// Genera o recupera el ID de sesión único del usuario (guardado en localStorage)
+// Recupera el ID de sesión del usuario (establecido tras el login con Google)
 function getSessionId() {
-  let id = localStorage.getItem("fastagenda_session");
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem("fastagenda_session", id);
-  }
-  return id;
+  return localStorage.getItem("fastagenda_session") || "";
 }
 
 const BASE = "/api";

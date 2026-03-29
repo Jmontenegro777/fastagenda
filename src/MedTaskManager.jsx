@@ -1146,7 +1146,7 @@ function StatsBar({ tasks }) {
 // ──────────────────────────────────────────────
 //  COMPONENTE PRINCIPAL
 // ──────────────────────────────────────────────
-export default function MedTaskManager() {
+export default function MedTaskManager({ user, onLogout }) {
   const [tasks, setTasks]             = useState([]);
   const [categories, setCategories]   = useState(INITIAL_CATEGORIES);
   const [view, setView]               = useState("month");
@@ -1307,6 +1307,25 @@ export default function MedTaskManager() {
             <span className="hidden sm:inline">+ Evento</span>
             <span className="sm:hidden text-xl leading-none font-bold">+</span>
           </button>
+          {/* User avatar + logout */}
+          {user && (
+            <div className="flex items-center gap-2 ml-1 pl-2 border-l border-white border-opacity-30">
+              {user.picture ? (
+                <img src={user.picture} alt={user.name}
+                  className="w-8 h-8 rounded-full border-2 border-white border-opacity-60 hidden sm:block" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-white bg-opacity-25 flex items-center justify-center text-sm font-bold hidden sm:block">
+                  {user.name?.[0]?.toUpperCase()}
+                </div>
+              )}
+              <button onClick={onLogout}
+                title="Cerrar sesión"
+                className="w-8 h-8 flex items-center justify-center bg-white bg-opacity-15 rounded-lg text-sm hover:bg-opacity-25 transition"
+              >
+                ↪
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
