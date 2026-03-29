@@ -395,8 +395,9 @@ function WeekView({ tasks, categories, currentDate, holidays, onDayClick, onTask
   const todayKey = dateKey(new Date());
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <div className="grid grid-cols-7 border-b border-gray-100">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div className="overflow-x-auto flex-1 flex flex-col min-h-0">
+      <div className="grid grid-cols-7 border-b border-gray-100 min-w-[480px]">
         {days.map((d, i) => {
           const key = dateKey(d);
           const isToday = key === todayKey;
@@ -427,7 +428,7 @@ function WeekView({ tasks, categories, currentDate, holidays, onDayClick, onTask
           );
         })}
       </div>
-      <div className="grid grid-cols-7 flex-1 overflow-y-auto divide-x divide-gray-100">
+      <div className="grid grid-cols-7 flex-1 overflow-y-auto divide-x divide-gray-100 min-w-[480px]">
         {days.map((d, i) => {
           const key = dateKey(d);
           const dayTasks = (tasksByDay[key] || []).sort((a, b) => a.time.localeCompare(b.time));
@@ -447,6 +448,7 @@ function WeekView({ tasks, categories, currentDate, holidays, onDayClick, onTask
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
@@ -584,7 +586,7 @@ function DayPanel({ date, tasks, categories, onAdd, onEdit, onToggle, onDelete }
   const reminderLabel = (r) => REMINDERS.find(x => x.value === r)?.label || "";
 
   return (
-    <div className="w-72 flex-shrink-0 bg-white border-l border-gray-100 flex flex-col overflow-hidden">
+    <div className="w-full sm:w-72 flex-shrink-0 bg-white sm:border-l border-gray-100 flex flex-col overflow-hidden" style={{ maxHeight: "inherit" }}>
       <div className="px-4 py-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div>
@@ -690,7 +692,7 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
   const panelW = expanded ? 360 : 300;
 
   return (
-    <div className="fixed bottom-4 right-4 z-40">
+    <div className="fixed bottom-20 sm:bottom-4 right-4 z-40">
       {open ? (
         <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
           style={{ width: panelW, maxHeight: expanded ? 480 : 320 }}>
@@ -844,16 +846,16 @@ function StatsBar({ tasks }) {
   const todayCount = tasks.filter(t => t.date === dateKey(new Date()) && !t.done).length;
 
   return (
-    <div className="flex gap-3 px-4 py-2 bg-white border-b border-gray-100 flex-shrink-0">
+    <div className="flex gap-2 sm:gap-3 px-4 py-2 bg-white border-b border-gray-100 flex-shrink-0 overflow-x-auto">
       {[
         { label: "Hoy",          value: todayCount,    color: "text-indigo-600", bg: "bg-indigo-50" },
         { label: "Pendientes",   value: pending,       color: "text-yellow-600", bg: "bg-yellow-50" },
         { label: "Completados",  value: done,          color: "text-green-600",  bg: "bg-green-50"  },
-        { label: "Con recordatorio", value: withReminder, color: "text-orange-500", bg: "bg-orange-50" },
+        { label: "Recordatorio", value: withReminder,  color: "text-orange-500", bg: "bg-orange-50" },
       ].map(s => (
-        <div key={s.label} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${s.bg}`}>
-          <span className={`text-lg font-bold ${s.color}`}>{s.value}</span>
-          <span className="text-xs text-gray-500 font-medium">{s.label}</span>
+        <div key={s.label} className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg ${s.bg} flex-shrink-0`}>
+          <span className={`text-base sm:text-lg font-bold ${s.color}`}>{s.value}</span>
+          <span className="text-xs text-gray-500 font-medium whitespace-nowrap">{s.label}</span>
         </div>
       ))}
     </div>
@@ -874,6 +876,8 @@ export default function MedTaskManager() {
   const [filterCat, setFilterCat]     = useState("all");
   const [search, setSearch]           = useState("");
   const [monthNotes, setMonthNotes]   = useState({});
+  const [showMobilePanel, setShowMobilePanel] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   // Festivos del año actual y siguiente (por si el calendario los cruza)
   const holidays = useMemo(() => {
@@ -910,31 +914,51 @@ export default function MedTaskManager() {
     return `${days[0].getDate()} – ${days[6].getDate()} ${MONTHS_ES[days[6].getMonth()]} ${days[6].getFullYear()}`;
   };
 
-  const handleDayClick   = d  => { setSelectedDay(d); if (view === "year") { setView("month"); setCurrentDate(d); } };
+  const handleDayClick   = d  => { setSelectedDay(d); setShowMobilePanel(true); if (view === "year") { setView("month"); setCurrentDate(d); } };
   const handleMonthClick = mi => { const d = new Date(currentDate.getFullYear(), mi, 1); setCurrentDate(d); setSelectedDay(d); setView("month"); };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
 
       {/* HEADER */}
-      <div className="bg-gradient-to-r from-indigo-700 to-blue-600 text-white px-6 py-3 flex items-center justify-between shadow-md flex-shrink-0">
+      <div className="bg-gradient-to-r from-indigo-700 to-blue-600 text-white px-4 sm:px-6 py-3 flex items-center justify-between shadow-md flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-white bg-opacity-20 flex items-center justify-center text-xl">🏥</div>
           <div>
             <h1 className="font-bold text-lg leading-tight">MedTask</h1>
-            <p className="text-xs text-indigo-200">Gestión de actividades médicas</p>
+            <p className="text-xs text-indigo-200 hidden sm:block">Gestión de actividades médicas</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Búsqueda expandida en móvil */}
+          {showMobileSearch && (
+            <input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
+              onBlur={() => { if (!search) setShowMobileSearch(false); }}
+              className="sm:hidden bg-white bg-opacity-15 border border-white border-opacity-30 rounded-lg px-3 py-1.5 text-sm placeholder-indigo-200 text-white focus:outline-none focus:bg-opacity-25 w-36" />
+          )}
+          {/* Búsqueda desktop siempre visible */}
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar..."
-            className="bg-white bg-opacity-15 border border-white border-opacity-30 rounded-lg px-3 py-1.5 text-sm placeholder-indigo-200 text-white focus:outline-none focus:bg-opacity-25 w-40" />
+            className="hidden sm:block bg-white bg-opacity-15 border border-white border-opacity-30 rounded-lg px-3 py-1.5 text-sm placeholder-indigo-200 text-white focus:outline-none focus:bg-opacity-25 w-40" />
+          {/* Icono búsqueda en móvil */}
+          {!showMobileSearch && (
+            <button onClick={() => setShowMobileSearch(true)}
+              className="sm:hidden w-9 h-9 flex items-center justify-center bg-white bg-opacity-15 rounded-lg text-lg">
+              🔍
+            </button>
+          )}
           <button onClick={() => setCatModal(true)}
-            className="flex items-center gap-1.5 bg-white bg-opacity-15 border border-white border-opacity-30 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-opacity-25 transition">
+            className="hidden sm:flex items-center gap-1.5 bg-white bg-opacity-15 border border-white border-opacity-30 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-opacity-25 transition">
             🏷️ <span>Categorías</span>
           </button>
+          {/* Categorías solo icono en móvil */}
+          <button onClick={() => setCatModal(true)}
+            className="sm:hidden w-9 h-9 flex items-center justify-center bg-white bg-opacity-15 rounded-lg text-lg">
+            🏷️
+          </button>
           <button onClick={() => setModal("new")}
-            className="bg-white text-indigo-700 px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-50 transition shadow">
-            + Evento
+            className="bg-white text-indigo-700 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-50 transition shadow">
+            <span className="hidden sm:inline">+ Evento</span>
+            <span className="sm:hidden text-xl leading-none font-bold">+</span>
           </button>
         </div>
       </div>
@@ -943,45 +967,70 @@ export default function MedTaskManager() {
       <StatsBar tasks={tasks} />
 
       {/* FILTROS + NAVEGACIÓN */}
-      <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-100 gap-3 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-300 outline-none">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-2 bg-white border-b border-gray-100 gap-2 flex-shrink-0">
+        {/* Fila 1 en móvil: navegación */}
+        <div className="flex items-center justify-between sm:contents gap-2">
+          <div className="flex items-center gap-1">
+            <button onClick={() => navigate(-1)} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition text-lg">‹</button>
+            <span className="text-sm font-semibold text-gray-700 min-w-0 sm:min-w-40 text-center px-1 truncate max-w-[160px] sm:max-w-none">{navLabel()}</span>
+            <button onClick={() => navigate(1)} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition text-lg">›</button>
+            <button onClick={goToday} className="text-xs text-indigo-600 border border-indigo-200 px-2 py-1 rounded-lg hover:bg-indigo-50 transition font-medium">Hoy</button>
+          </div>
+          {/* Vista selector — solo desktop */}
+          <div className="hidden sm:flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
+            {["week","month","year"].map(v => (
+              <button key={v} onClick={() => setView(v)} className={`px-3 py-1 rounded-md text-xs font-semibold transition ${view === v ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                {{ week:"Semana", month:"Mes", year:"Año" }[v]}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* Filtro categoría */}
+        <div className="flex items-center gap-2 sm:order-first">
+          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-indigo-300 outline-none w-full sm:w-auto">
             <option value="all">Todas las categorías</option>
             {Object.entries(categories).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate(-1)} className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition">‹</button>
-          <span className="text-sm font-semibold text-gray-700 min-w-40 text-center">{navLabel()}</span>
-          <button onClick={() => navigate(1)} className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition">›</button>
-          <button onClick={goToday} className="text-xs text-indigo-600 border border-indigo-200 px-2 py-1 rounded-lg hover:bg-indigo-50 transition font-medium">Hoy</button>
-        </div>
-
-        <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
-          {["week","month","year"].map(v => (
-            <button key={v} onClick={() => setView(v)} className={`px-3 py-1 rounded-md text-xs font-semibold transition ${view === v ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
-              {{ week:"Semana", month:"Mes", year:"Año" }[v]}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* CUERPO */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden pb-14 sm:pb-0">
         <div className="flex-1 flex flex-col overflow-hidden">
           {view === "week"  && <WeekView  tasks={filtered} categories={categories} currentDate={currentDate} holidays={holidays} onDayClick={handleDayClick} onTaskClick={t => setModal(t)} />}
           {view === "month" && <MonthView tasks={filtered} categories={categories} currentDate={currentDate} holidays={holidays} onDayClick={handleDayClick} onTaskClick={t => setModal(t)} />}
           {view === "year"  && <YearView  tasks={filtered} categories={categories} currentDate={currentDate} onMonthClick={handleMonthClick} />}
         </div>
+        {/* Panel lateral — solo visible en desktop */}
         {view !== "year" && (
-          <DayPanel date={selectedDay} tasks={tasks} categories={categories}
-            onAdd={() => setModal("new")} onEdit={t => setModal(t)} onToggle={toggleDone} onDelete={deleteTask} />
+          <div className="hidden sm:flex">
+            <DayPanel date={selectedDay} tasks={tasks} categories={categories}
+              onAdd={() => setModal("new")} onEdit={t => setModal(t)} onToggle={toggleDone} onDelete={deleteTask} />
+          </div>
         )}
       </div>
 
-      {/* LEYENDA */}
-      <div className="flex items-center gap-4 px-4 py-2 bg-white border-t border-gray-100 flex-shrink-0 flex-wrap">
+      {/* PANEL DÍA MÓVIL — bottom sheet */}
+      {showMobilePanel && (
+        <div className="sm:hidden fixed inset-0 z-30" onClick={() => setShowMobilePanel(false)}>
+          <div className="absolute inset-0 bg-black bg-opacity-40" />
+          <div className="absolute inset-x-0 bottom-14 rounded-t-2xl overflow-hidden shadow-2xl"
+            style={{ maxHeight: "72vh" }}
+            onClick={e => e.stopPropagation()}>
+            {/* Drag handle */}
+            <div className="flex justify-center bg-white pt-2 pb-1">
+              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            </div>
+            <DayPanel date={selectedDay} tasks={tasks} categories={categories}
+              onAdd={() => { setShowMobilePanel(false); setModal("new"); }}
+              onEdit={t => { setShowMobilePanel(false); setModal(t); }}
+              onToggle={toggleDone} onDelete={deleteTask} />
+          </div>
+        </div>
+      )}
+
+      {/* LEYENDA — solo desktop */}
+      <div className="hidden sm:flex items-center gap-4 px-4 py-2 bg-white border-t border-gray-100 flex-shrink-0 flex-wrap">
         {Object.entries(categories).map(([k, v]) => (
           <div key={k} className="flex items-center gap-1.5">
             <div className={`w-2.5 h-2.5 rounded-full ${v.dot}`} />
@@ -992,6 +1041,26 @@ export default function MedTaskManager() {
           <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300" />
           <span className="text-xs text-gray-400">Fin de semana / Festivo</span>
         </div>
+      </div>
+
+      {/* BARRA DE NAVEGACIÓN INFERIOR — solo móvil */}
+      <div className="sm:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 flex items-center justify-around px-2 py-1 z-20">
+        {[
+          { v: "week",  icon: "📅", label: "Semana" },
+          { v: "month", icon: "🗓️", label: "Mes"    },
+          { v: "year",  icon: "📆", label: "Año"    },
+        ].map(({ v, icon, label }) => (
+          <button key={v} onClick={() => setView(v)}
+            className={`flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition ${view === v ? "text-indigo-600" : "text-gray-400"}`}>
+            <span className="text-xl leading-none">{icon}</span>
+            <span className="text-xs font-medium">{label}</span>
+          </button>
+        ))}
+        <button onClick={goToday}
+          className="flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl text-gray-400 transition">
+          <span className="text-xl leading-none">🏠</span>
+          <span className="text-xs font-medium">Hoy</span>
+        </button>
       </div>
 
       {/* MODAL EVENTO */}
