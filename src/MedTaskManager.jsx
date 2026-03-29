@@ -1146,7 +1146,7 @@ function StatsBar({ tasks }) {
 // ──────────────────────────────────────────────
 //  COMPONENTE PRINCIPAL
 // ──────────────────────────────────────────────
-export default function MedTaskManager() {
+export default function MedTaskManager({ user, onLogout }) {
   const [tasks, setTasks]             = useState([]);
   const [categories, setCategories]   = useState(INITIAL_CATEGORIES);
   const [view, setView]               = useState("month");
@@ -1166,7 +1166,6 @@ export default function MedTaskManager() {
   useEffect(() => {
     async function load() {
       try {
-        await api.initSession();
         const [remoteTasks, remoteCats, remoteNotes] = await Promise.all([
           api.getTasks(),
           api.getCategories(),
@@ -1307,6 +1306,23 @@ export default function MedTaskManager() {
             <span className="hidden sm:inline">+ Evento</span>
             <span className="sm:hidden text-xl leading-none font-bold">+</span>
           </button>
+          {/* Avatar + logout */}
+          {user && (
+            <div className="flex items-center gap-2 pl-1 border-l border-white border-opacity-30 ml-1">
+              {user.picture
+                ? <img src={user.picture} alt={user.name} referrerPolicy="no-referrer"
+                    className="w-8 h-8 rounded-full border-2 border-white border-opacity-40 hidden sm:block" />
+                : <div className="w-8 h-8 rounded-full bg-white bg-opacity-20 flex items-center justify-center text-sm font-bold hidden sm:block">
+                    {user.name?.[0] ?? "U"}
+                  </div>
+              }
+              <button onClick={onLogout} title="Cerrar sesión"
+                className="w-8 h-8 flex items-center justify-center bg-white bg-opacity-10 hover:bg-opacity-25 rounded-lg text-white transition text-sm"
+                aria-label="Cerrar sesión">
+                ↩
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
