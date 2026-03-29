@@ -930,8 +930,8 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
   const total = checklist.length;
   const hasNotes = text.trim().length > 0 || total > 0;
 
-  // Contenido interno del panel (compartido entre desktop y móvil)
-  const PanelContent = () => (
+  // JSX del contenido — variable, NO función componente (evita remount en cada render)
+  const panelContent = (
     <>
       {/* Tabs */}
       <div className="flex border-b border-gray-100 flex-shrink-0">
@@ -994,10 +994,8 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
             {checklist.map((item, idx) => (
               <div key={item.id} className={`rounded-lg border transition ${item.checked ? "bg-green-50 border-green-100" : "bg-white border-gray-100 hover:border-amber-200"}`}>
 
-                {/* Modo visualización */}
                 {editingId !== item.id ? (
                   <div className="flex items-center gap-2 px-2 py-2">
-                    {/* Checkbox */}
                     <button onClick={() => toggleItem(item.id)}
                       className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition
                         ${item.checked ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-amber-400"}`}>
@@ -1007,34 +1005,21 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
                         </svg>
                       )}
                     </button>
-
-                    {/* Texto */}
                     <span className={`flex-1 text-sm leading-snug ${item.checked ? "line-through text-gray-400" : "text-gray-700"}`}>
                       {item.text}
                     </span>
-
-                    {/* Acciones — siempre visibles */}
                     <div className="flex items-center gap-0.5 flex-shrink-0">
                       <button onClick={() => moveItem(item.id, -1)} disabled={idx === 0}
-                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 disabled:opacity-20 transition text-xs rounded">
-                        ▲
-                      </button>
+                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 disabled:opacity-20 transition text-xs rounded">▲</button>
                       <button onClick={() => moveItem(item.id, 1)} disabled={idx === checklist.length - 1}
-                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 disabled:opacity-20 transition text-xs rounded">
-                        ▼
-                      </button>
+                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 disabled:opacity-20 transition text-xs rounded">▼</button>
                       <button onClick={() => startEdit(item)}
-                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-amber-500 transition text-sm rounded">
-                        ✏️
-                      </button>
+                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-amber-500 transition text-sm rounded">✏️</button>
                       <button onClick={() => deleteItem(item.id)}
-                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 transition text-sm rounded">
-                        🗑️
-                      </button>
+                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 transition text-sm rounded">🗑️</button>
                     </div>
                   </div>
                 ) : (
-                  /* Modo edición inline */
                   <div className="flex items-center gap-2 px-2 py-1.5">
                     <input
                       autoFocus
@@ -1044,13 +1029,9 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
                       onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }}
                     />
                     <button onClick={saveEdit}
-                      className="text-xs bg-amber-500 text-white px-2.5 py-1.5 rounded-lg font-semibold hover:bg-amber-600 transition flex-shrink-0">
-                      ✓
-                    </button>
+                      className="text-xs bg-amber-500 text-white px-2.5 py-1.5 rounded-lg font-semibold hover:bg-amber-600 transition flex-shrink-0">✓</button>
                     <button onClick={() => setEditingId(null)}
-                      className="text-xs border border-gray-200 text-gray-500 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition flex-shrink-0">
-                      ✕
-                    </button>
+                      className="text-xs border border-gray-200 text-gray-500 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition flex-shrink-0">✕</button>
                   </div>
                 )}
               </div>
@@ -1067,9 +1048,7 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
               onKeyDown={e => e.key === "Enter" && addItem()}
             />
             <button onClick={addItem}
-              className="bg-amber-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-amber-600 transition">
-              +
-            </button>
+              className="bg-amber-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-amber-600 transition">+</button>
           </div>
         </>
       )}
@@ -1086,7 +1065,7 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
               ${hasNotes ? "bg-amber-500 text-white border-amber-400" : "bg-white text-gray-600 border-gray-200"}`}>
             <span className="text-lg">📝</span>
             <div className="text-left">
-              <div className="text-xs font-bold">{hasNotes ? "Notas del mes" : "Notas del mes"}</div>
+              <div className="text-xs font-bold">Notas del mes</div>
               {hasNotes
                 ? <div className="text-xs opacity-80">
                     {text.trim() ? text.slice(0, 24) + (text.length > 24 ? "…" : "") : ""}
@@ -1112,7 +1091,7 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
             <button onClick={() => setOpen(false)} className="text-white text-2xl leading-none opacity-80 hover:opacity-100">×</button>
           </div>
           <div className="flex-1 flex flex-col overflow-hidden">
-            <PanelContent />
+            {panelContent}
           </div>
         </div>
       )}
@@ -1131,7 +1110,7 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
             </div>
             <button onClick={() => setOpen(false)} className="text-white opacity-70 hover:opacity-100 text-xl leading-none">×</button>
           </div>
-          <PanelContent />
+          {panelContent}
         </div>
       )}
     </>
