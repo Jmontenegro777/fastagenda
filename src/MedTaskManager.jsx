@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import * as api from "./api.js";
 
 // ──────────────────────────────────────────────
 //  PALETA DE COLORES
@@ -866,7 +867,7 @@ function StatsBar({ tasks }) {
 //  COMPONENTE PRINCIPAL
 // ──────────────────────────────────────────────
 export default function MedTaskManager() {
-  const [tasks, setTasks]             = useState(INITIAL_TASKS);
+  const [tasks, setTasks]             = useState([]);
   const [categories, setCategories]   = useState(INITIAL_CATEGORIES);
   const [view, setView]               = useState("month");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -878,6 +879,31 @@ export default function MedTaskManager() {
   const [monthNotes, setMonthNotes]   = useState({});
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [loading, setLoading]         = useState(true);
+  const [syncing, setSyncing]         = useState(false);
+
+  // Cargar datos al iniciar
+  useEffect(() => {
+    async function load() {
+      try {
+        await api.initSession();
+        const [remoteTasks, remoteCats, remoteNotes] = await Promise.all([
+          api.getTasks(),
+          api.getCategories(),
+          api.getNotes(),
+        ]);
+        setTasks(remoteTasks.length > 0 ? remoteTasks : INITIAL_TASKS);
+        if (Object.keys(remoteCats).length > 0) setCategories(remoteCats);
+        setMonthNotes(remoteNotes);
+      } catch (e) {
+        console.error("Error cargando datos:", e);
+        setTasks(INITIAL_TASKS);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
 
   // Festivos del año actual y siguiente (por si el calendario los cruza)
   const holidays = useMemo(() => {
@@ -893,10 +919,35 @@ export default function MedTaskManager() {
     return true;
   }), [tasks, filterCat, search, categories]);
 
-  const saveTask   = t => setTasks(ts => t.id && ts.find(x => x.id === t.id) ? ts.map(x => x.id === t.id ? t : x) : [...ts, t]);
-  const toggleDone = id => setTasks(ts => ts.map(t => t.id === id ? { ...t, done: !t.done } : t));
-  const deleteTask = id => setTasks(ts => ts.filter(t => t.id !== id));
-  const saveNote   = (mk, data) => setMonthNotes(n => ({ ...n, [mk]: data }));
+  const saveTask = useCallback(t => {
+    setTasks(ts => t.id && ts.find(x => x.id === t.id) ? ts.map(x => x.id === t.id ? t : x) : [...ts, t]);
+    api.saveTask(t).catch(console.error);
+  }, []);
+
+  const toggleDone = useCallback(id => {
+    setTasks(ts => ts.map(t => {
+      if (t.id !== id) return t;
+      const updated = { ...t, done: !t.done };
+      api.toggleTask(id, updated.done).catch(console.error);
+      return updated;
+    }));
+  }, []);
+
+  const deleteTask = useCallback(id => {
+    setTasks(ts => ts.filter(t => t.id !== id));
+    api.deleteTask(id).catch(console.error);
+  }, []);
+
+  const saveNote = useCallback((mk, data) => {
+    setMonthNotes(n => ({ ...n, [mk]: data }));
+    api.saveNote(mk, data.text, data.checklist).catch(console.error);
+  }, []);
+
+  const handleSaveCategories = useCallback(newCats => {
+    setCategories(newCats);
+    setSyncing(true);
+    api.saveCategories(newCats).catch(console.error).finally(() => setSyncing(false));
+  }, []);
 
   const navigate = dir => {
     const d = new Date(currentDate);
@@ -917,6 +968,19 @@ export default function MedTaskManager() {
   const handleDayClick   = d  => { setSelectedDay(d); setShowMobilePanel(true); if (view === "year") { setView("month"); setCurrentDate(d); } };
   const handleMonthClick = mi => { const d = new Date(currentDate.getFullYear(), mi, 1); setCurrentDate(d); setSelectedDay(d); setView("month"); };
 
+  if (loading) return (
+    <div className="h-screen flex flex-col items-center justify-center bg-gray-50 gap-4">
+      <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-3xl shadow-lg">🏥</div>
+      <div className="text-indigo-600 font-bold text-lg">MedTask</div>
+      <div className="flex gap-1">
+        {[0,1,2].map(i => (
+          <div key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+        ))}
+      </div>
+      <p className="text-sm text-gray-400">Cargando tus datos...</p>
+    </div>
+  );
+
   return (
     <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
 
@@ -925,7 +989,10 @@ export default function MedTaskManager() {
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-white bg-opacity-20 flex items-center justify-center text-xl">🏥</div>
           <div>
-            <h1 className="font-bold text-lg leading-tight">MedTask</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-bold text-lg leading-tight">MedTask</h1>
+              {syncing && <span className="text-xs bg-white bg-opacity-20 text-indigo-100 px-2 py-0.5 rounded-full animate-pulse">Guardando…</span>}
+            </div>
             <p className="text-xs text-indigo-200 hidden sm:block">Gestión de actividades médicas</p>
           </div>
         </div>
@@ -1072,7 +1139,7 @@ export default function MedTaskManager() {
       {/* MODAL CATEGORÍAS */}
       {catModal && (
         <CategoryManagerModal categories={categories} tasks={tasks}
-          onSave={newCats => setCategories(newCats)} onClose={() => setCatModal(false)} />
+          onSave={handleSaveCategories} onClose={() => setCatModal(false)} />
       )}
 
       {/* PANEL NOTAS DEL MES */}
