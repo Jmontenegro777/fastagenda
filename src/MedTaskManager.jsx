@@ -855,30 +855,29 @@ function DayPanel({ date, tasks, categories, onAdd, onEdit, onToggle, onDelete }
 //  PANEL FLOTANTE: NOTAS DEL MES (con Checklist)
 // ──────────────────────────────────────────────
 function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
-  const [open, setOpen]         = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [tab, setTab]           = useState("notes"); // "notes" | "checklist"
+  const [open, setOpen] = useState(false);
+  const [tab, setTab]   = useState("notes");
   const mk = monthKey(currentDate);
   const monthLabel = `${MONTHS_ES[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
-  // Leer datos del mes actual
   const noteData = monthNotes[mk] || { text: "", checklist: [] };
-  const [text, setText]           = useState(noteData.text);
+  const [text, setText]       = useState(noteData.text);
   const [checklist, setChecklist] = useState(noteData.checklist);
-  const [newItem, setNewItem]     = useState("");
+  const [newItem, setNewItem] = useState("");
+  const [editingId, setEditingId] = useState(null); // id del ítem en edición
+  const [editingText, setEditingText] = useState("");
 
   // Sincronizar cuando cambia el mes
   useMemo(() => {
     const d = monthNotes[mk] || { text: "", checklist: [] };
     setText(d.text);
     setChecklist(d.checklist);
+    setEditingId(null);
   }, [mk, monthNotes]);
 
   const persist = (t, cl) => onSave(mk, { text: t, checklist: cl });
 
-  const handleBlurText = () => persist(text, checklist);
-
-  // Checklist actions
+  // ── Checklist: agregar ──
   const addItem = () => {
     if (!newItem.trim()) return;
     const cl = [...checklist, { id: Date.now(), text: newItem.trim(), checked: false }];
@@ -886,33 +885,242 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
     persist(text, cl);
     setNewItem("");
   };
+
+  // ── Checklist: marcar / desmarcar ──
   const toggleItem = (id) => {
     const cl = checklist.map(it => it.id === id ? { ...it, checked: !it.checked } : it);
     setChecklist(cl);
     persist(text, cl);
   };
+
+  // ── Checklist: eliminar ──
   const deleteItem = (id) => {
     const cl = checklist.filter(it => it.id !== id);
     setChecklist(cl);
     persist(text, cl);
   };
-  const editItem = (id, val) => {
-    const cl = checklist.map(it => it.id === id ? { ...it, text: val } : it);
+
+  // ── Checklist: iniciar edición de un ítem ──
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setEditingText(item.text);
+  };
+
+  // ── Checklist: guardar edición ──
+  const saveEdit = () => {
+    if (!editingText.trim()) { setEditingId(null); return; }
+    const cl = checklist.map(it => it.id === editingId ? { ...it, text: editingText.trim() } : it);
     setChecklist(cl);
+    persist(text, cl);
+    setEditingId(null);
+  };
+
+  // ── Checklist: reordenar (mover arriba / abajo) ──
+  const moveItem = (id, dir) => {
+    const idx = checklist.findIndex(it => it.id === id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= checklist.length) return;
+    const cl = [...checklist];
+    [cl[idx], cl[newIdx]] = [cl[newIdx], cl[idx]];
+    setChecklist(cl);
+    persist(text, cl);
   };
 
   const done  = checklist.filter(it => it.checked).length;
   const total = checklist.length;
   const hasNotes = text.trim().length > 0 || total > 0;
-  const panelW = expanded ? 360 : 300;
+
+  // Contenido interno del panel (compartido entre desktop y móvil)
+  const PanelContent = () => (
+    <>
+      {/* Tabs */}
+      <div className="flex border-b border-gray-100 flex-shrink-0">
+        {[
+          { id: "notes",     label: "📄 Notas" },
+          { id: "checklist", label: `✅ Lista${total > 0 ? ` (${done}/${total})` : ""}` },
+        ].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex-1 py-2.5 text-xs font-semibold transition ${tab === t.id ? "text-amber-600 border-b-2 border-amber-500 bg-amber-50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── TAB: NOTAS ── */}
+      {tab === "notes" && (
+        <>
+          <textarea
+            className="flex-1 p-3 text-sm text-gray-700 resize-none outline-none border-none focus:ring-0 placeholder-gray-300"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onBlur={() => persist(text, checklist)}
+            placeholder={`Notas generales de ${monthLabel}…\n\nMetas, pendientes, observaciones del mes…`}
+          />
+          <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
+            <span className="text-xs text-gray-400">{text.length} caracteres</span>
+            <button onClick={() => persist(text, checklist)}
+              className="text-xs bg-amber-500 text-white px-3 py-1 rounded-lg font-medium hover:bg-amber-600 transition">
+              Guardar
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ── TAB: CHECKLIST ── */}
+      {tab === "checklist" && (
+        <>
+          {/* Barra de progreso */}
+          {total > 0 && (
+            <div className="px-3 pt-2.5 pb-1 flex-shrink-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500">{done} de {total} completados</span>
+                <span className="text-xs font-bold text-amber-600">{Math.round((done/total)*100)}%</span>
+              </div>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(done/total)*100}%` }} />
+              </div>
+            </div>
+          )}
+
+          {/* Lista de ítems */}
+          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+            {checklist.length === 0 && (
+              <div className="text-center text-gray-300 text-xs py-8">
+                <div className="text-3xl mb-1">☑️</div>
+                <div>Agrega elementos a tu lista</div>
+              </div>
+            )}
+
+            {checklist.map((item, idx) => (
+              <div key={item.id} className={`rounded-lg border transition ${item.checked ? "bg-green-50 border-green-100" : "bg-white border-gray-100 hover:border-amber-200"}`}>
+
+                {/* Modo visualización */}
+                {editingId !== item.id ? (
+                  <div className="flex items-center gap-2 px-2 py-2">
+                    {/* Checkbox */}
+                    <button onClick={() => toggleItem(item.id)}
+                      className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition
+                        ${item.checked ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-amber-400"}`}>
+                      {item.checked && (
+                        <svg viewBox="0 0 10 10" className="w-3 h-3 fill-white">
+                          <path d="M1.5 5l2.5 2.5L8.5 2"/>
+                        </svg>
+                      )}
+                    </button>
+
+                    {/* Texto */}
+                    <span className={`flex-1 text-sm leading-snug ${item.checked ? "line-through text-gray-400" : "text-gray-700"}`}>
+                      {item.text}
+                    </span>
+
+                    {/* Acciones — siempre visibles */}
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                      <button onClick={() => moveItem(item.id, -1)} disabled={idx === 0}
+                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 disabled:opacity-20 transition text-xs rounded">
+                        ▲
+                      </button>
+                      <button onClick={() => moveItem(item.id, 1)} disabled={idx === checklist.length - 1}
+                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-500 disabled:opacity-20 transition text-xs rounded">
+                        ▼
+                      </button>
+                      <button onClick={() => startEdit(item)}
+                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-amber-500 transition text-sm rounded">
+                        ✏️
+                      </button>
+                      <button onClick={() => deleteItem(item.id)}
+                        className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 transition text-sm rounded">
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Modo edición inline */
+                  <div className="flex items-center gap-2 px-2 py-1.5">
+                    <input
+                      autoFocus
+                      className="flex-1 text-sm border border-amber-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-amber-200"
+                      value={editingText}
+                      onChange={e => setEditingText(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }}
+                    />
+                    <button onClick={saveEdit}
+                      className="text-xs bg-amber-500 text-white px-2.5 py-1.5 rounded-lg font-semibold hover:bg-amber-600 transition flex-shrink-0">
+                      ✓
+                    </button>
+                    <button onClick={() => setEditingId(null)}
+                      className="text-xs border border-gray-200 text-gray-500 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition flex-shrink-0">
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Agregar nuevo ítem */}
+          <div className="px-3 py-2.5 border-t border-gray-100 flex gap-2 flex-shrink-0">
+            <input
+              className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:ring-2 focus:ring-amber-300 outline-none placeholder-gray-300"
+              placeholder="Nuevo elemento…"
+              value={newItem}
+              onChange={e => setNewItem(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && addItem()}
+            />
+            <button onClick={addItem}
+              className="bg-amber-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-amber-600 transition">
+              +
+            </button>
+          </div>
+        </>
+      )}
+    </>
+  );
 
   return (
-    <div className="fixed bottom-20 sm:bottom-4 right-4 z-40">
-      {open ? (
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
-          style={{ width: panelW, maxHeight: expanded ? 480 : 320 }}>
+    <>
+      {/* ── BOTÓN FLOTANTE (colapsado) ── */}
+      {!open && (
+        <div className="fixed bottom-20 sm:bottom-4 right-4 z-40">
+          <button onClick={() => setOpen(true)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg border transition hover:shadow-xl hover:-translate-y-0.5
+              ${hasNotes ? "bg-amber-500 text-white border-amber-400" : "bg-white text-gray-600 border-gray-200"}`}>
+            <span className="text-lg">📝</span>
+            <div className="text-left">
+              <div className="text-xs font-bold">{hasNotes ? "Notas del mes" : "Notas del mes"}</div>
+              {hasNotes
+                ? <div className="text-xs opacity-80">
+                    {text.trim() ? text.slice(0, 24) + (text.length > 24 ? "…" : "") : ""}
+                    {total > 0 ? ` ✅ ${done}/${total}` : ""}
+                  </div>
+                : <div className="text-xs opacity-60">{monthLabel}</div>}
+            </div>
+          </button>
+        </div>
+      )}
 
-          {/* Header */}
+      {/* ── PANEL ABIERTO EN MÓVIL: overlay full-screen ── */}
+      {open && (
+        <div className="sm:hidden fixed inset-0 z-50 flex flex-col bg-white">
+          <div className="bg-gradient-to-r from-amber-500 to-orange-400 px-4 py-3.5 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📝</span>
+              <div>
+                <div className="text-white font-bold text-sm">Notas del mes</div>
+                <div className="text-amber-100 text-xs">{monthLabel}</div>
+              </div>
+            </div>
+            <button onClick={() => setOpen(false)} className="text-white text-2xl leading-none opacity-80 hover:opacity-100">×</button>
+          </div>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <PanelContent />
+          </div>
+        </div>
+      )}
+
+      {/* ── PANEL ABIERTO EN DESKTOP: flotante ── */}
+      {open && (
+        <div className="hidden sm:flex fixed bottom-4 right-4 z-40 flex-col bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+          style={{ width: 340, maxHeight: 480 }}>
           <div className="bg-gradient-to-r from-amber-500 to-orange-400 px-4 py-2.5 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-lg">📝</span>
@@ -921,133 +1129,12 @@ function MonthNotesPanel({ currentDate, monthNotes, onSave }) {
                 <div className="text-amber-100 text-xs">{monthLabel}</div>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setExpanded(e => !e)} className="text-white opacity-70 hover:opacity-100 text-base px-1" title={expanded ? "Contraer" : "Expandir"}>
-                {expanded ? "⊟" : "⊞"}
-              </button>
-              <button onClick={() => setOpen(false)} className="text-white opacity-70 hover:opacity-100 text-xl leading-none">×</button>
-            </div>
+            <button onClick={() => setOpen(false)} className="text-white opacity-70 hover:opacity-100 text-xl leading-none">×</button>
           </div>
-
-          {/* Tabs */}
-          <div className="flex border-b border-gray-100 flex-shrink-0">
-            {[
-              { id: "notes",     label: "📄 Notas"     },
-              { id: "checklist", label: `✅ Lista ${total > 0 ? `(${done}/${total})` : ""}` },
-            ].map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`flex-1 py-2 text-xs font-semibold transition ${tab === t.id ? "text-amber-600 border-b-2 border-amber-500 bg-amber-50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          {/* NOTAS */}
-          {tab === "notes" && (
-            <>
-              <textarea
-                className="flex-1 p-3 text-sm text-gray-700 resize-none outline-none border-none focus:ring-0 placeholder-gray-300"
-                style={{ minHeight: expanded ? 200 : 110 }}
-                value={text}
-                onChange={e => setText(e.target.value)}
-                onBlur={handleBlurText}
-                placeholder={`Notas generales de ${monthLabel}...\n\nMetas, pendientes, observaciones del mes...`}
-              />
-              <div className="px-3 py-2 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
-                <span className="text-xs text-gray-400">{text.length} caracteres</span>
-                <button onClick={() => persist(text, checklist)}
-                  className="text-xs bg-amber-500 text-white px-3 py-1 rounded-lg font-medium hover:bg-amber-600 transition">
-                  Guardar
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* CHECKLIST */}
-          {tab === "checklist" && (
-            <>
-              {/* Progress bar */}
-              {total > 0 && (
-                <div className="px-3 pt-2 flex-shrink-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-500">{done} de {total} completados</span>
-                    <span className="text-xs font-bold text-amber-600">{Math.round((done/total)*100)}%</span>
-                  </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(done/total)*100}%` }} />
-                  </div>
-                </div>
-              )}
-
-              {/* Items */}
-              <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-                {checklist.length === 0 && (
-                  <div className="text-center text-gray-300 text-xs py-6">
-                    <div className="text-3xl mb-1">☑️</div>
-                    <div>Agrega elementos a tu lista</div>
-                  </div>
-                )}
-                {checklist.map(item => (
-                  <div key={item.id} className={`flex items-center gap-2 group rounded-lg px-2 py-1.5 transition ${item.checked ? "bg-green-50" : "hover:bg-gray-50"}`}>
-                    <button onClick={() => toggleItem(item.id)}
-                      className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition
-                        ${item.checked ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-amber-400"}`}>
-                      {item.checked && (
-                        <svg viewBox="0 0 10 10" className="w-3 h-3 fill-white">
-                          <path d="M1.5 5l2.5 2.5L8.5 2"/>
-                        </svg>
-                      )}
-                    </button>
-                    <input
-                      className={`flex-1 text-sm bg-transparent outline-none border-none focus:ring-0 ${item.checked ? "line-through text-gray-400" : "text-gray-700"}`}
-                      value={item.text}
-                      onChange={e => editItem(item.id, e.target.value)}
-                      onBlur={() => persist(text, checklist)}
-                      onKeyDown={e => e.key === "Enter" && e.target.blur()}
-                    />
-                    <button onClick={() => deleteItem(item.id)}
-                      className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs px-1 transition">
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Add item */}
-              <div className="px-3 py-2 border-t border-gray-100 flex gap-2 flex-shrink-0">
-                <input
-                  className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-amber-300 outline-none placeholder-gray-300"
-                  placeholder="Nuevo elemento..."
-                  value={newItem}
-                  onChange={e => setNewItem(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addItem()}
-                />
-                <button onClick={addItem}
-                  className="bg-amber-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-amber-600 transition">
-                  +
-                </button>
-              </div>
-            </>
-          )}
+          <PanelContent />
         </div>
-      ) : (
-        /* Botón flotante colapsado */
-        <button onClick={() => setOpen(true)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg border transition hover:shadow-xl hover:-translate-y-0.5
-            ${hasNotes ? "bg-amber-500 text-white border-amber-400" : "bg-white text-gray-600 border-gray-200"}`}>
-          <span className="text-lg">📝</span>
-          <div className="text-left">
-            <div className="text-xs font-bold">{hasNotes ? "Notas del mes" : "Agregar notas del mes"}</div>
-            {hasNotes
-              ? <div className="text-xs opacity-80">
-                  {text.trim() ? text.slice(0, 28) + (text.length > 28 ? "…" : "") : ""}
-                  {total > 0 ? ` · ✅ ${done}/${total}` : ""}
-                </div>
-              : <div className="text-xs opacity-60">{monthLabel}</div>}
-          </div>
-        </button>
       )}
-    </div>
+    </>
   );
 }
 
